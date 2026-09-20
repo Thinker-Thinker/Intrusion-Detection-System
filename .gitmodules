@@ -1,0 +1,3 @@
+[submodule "tinyengine"]
+	path = tinyengine
+	url = https://github.com/mit-han-lab/tinyengine
