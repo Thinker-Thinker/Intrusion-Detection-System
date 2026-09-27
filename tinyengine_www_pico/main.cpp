@@ -15,7 +15,7 @@ extern "C"
 #include "genNN.h"
 #include "tinyengine_function.h"
 }
-
+#include "matthew_image_array.h"
 #define RES_W 80
 #define RES_H 80
 #define OUTPUT_CH 2
@@ -36,7 +36,7 @@ int main()
 {
     stdio_init_all();
     char buf[150];
-    bool should_person = true;
+    bool should_person = false;
     while (1)
     {
         should_person != should_person;
@@ -44,10 +44,11 @@ int main()
         signed char *input = getInput();
         for (int i = 0; i < RES_W * RES_W * 3; i++)
         {
-            if (should_person)
-                input[i] = person[i]; // Image of person
-            else
-                input[i] = no_person[i]; // Image of non-person
+            // if (should_person)
+            //     input[i] = person[i]; // Image of person
+            // else
+            //     input[i] = no_person[i]; // Image of non-person
+            input[i] = matthew_image_array[i]; // Image of non-person
         }
         RGBbuf = (uint16_t *)&input[80 * 80 * 4];
         int t_mode = 0;
