@@ -1,0 +1,6 @@
+../Core/Src/main.c:89:13:CPU_CACHE_Enable	24	static,ignoring_inline_asm
+../Core/Src/main.c:98:13:MPU_Config	24	static
+../Core/Src/main.c:156:5:main	72	static,ignoring_inline_asm
+../Core/Src/main.c:258:6:SystemClock_Config	120	static
+../Core/Src/main.c:322:6:HAL_DCMI_FrameEventCallback	16	static
+../Core/Src/main.c:342:6:Error_Handler	4	static,ignoring_inline_asm
