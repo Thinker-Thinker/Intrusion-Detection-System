@@ -1,0 +1,35 @@
+diff --git a/code_generator/CodeGenerator.py b/code_generator/CodeGenerator.py
+index 1577b56..7e3ad07 100644
+--- a/code_generator/CodeGenerator.py
++++ b/code_generator/CodeGenerator.py
+@@ -896,8 +896,8 @@ signed char* getOutput() {
+         for i in range(channel):
+             tmpW = 0
+             for j in range(kernelsize):
+-                tmpW += weight[j * channel + i]
+-            fp.write(str(self.int32_clip(bias[i] + tmpW * input_offset)) + ", ")
++                tmpW += int(weight[j * channel + i])
++            fp.write(str(self.int32_clip(int(bias[i]) + tmpW * int(input_offset))) + ", ")
+         fp.write("};\n")
+         string = f"{const_str}int32_t offsetRBias" + str(Lindex) + "[" + str(len(bias)) + "] = {"
+         fp.write(string)
+@@ -905,8 +905,8 @@ signed char* getOutput() {
+         for i in range(channel):
+             tmpW = 0
+             for j in range(kernelsize):
+-                tmpW += weight[j * channel + i]
+-            fp.write(str(bias[i] + tmpW * input_offset - self.int32_clip(bias[i] + tmpW * input_offset)) + ", ")
++                tmpW += int(weight[j * channel + i])
++            fp.write(str(int(bias[i]) + tmpW * int(input_offset) - self.int32_clip(int(bias[i]) + tmpW * int(input_offset))) + ", ")
+         fp.write("};\n")
+ 
+         if bias_name is not None:
+@@ -953,7 +953,7 @@ signed char* getOutput() {
+             return -(2**31)
+         elif a > 2**31 - 1:
+             return 2**31 - 1
+-        return a.astype(int)
++        return int(a)
+ 
+     def _closefp(self):
+         self.header_handle.close()
