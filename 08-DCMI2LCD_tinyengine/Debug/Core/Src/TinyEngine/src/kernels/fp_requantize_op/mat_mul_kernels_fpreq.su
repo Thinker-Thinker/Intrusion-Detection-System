@@ -1,0 +1,12 @@
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:23:7:mat_mult_kernel_s8_s16_reordered_ch48_fpreq	3176	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:330:7:mat_mult_kernel_s8_s16_reordered_ch16_fpreq	1128	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:477:7:mat_mult_kernel_s8_s16_reordered_ch8_fpreq	624	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:585:7:mat_mult_kernel_s8_s16_reordered_ch24_fpreq	1648	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:773:7:mat_mult_kernel_s8_s16_reordered_fpreq	544	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:905:7:mat_mult_kernel_s8_s16_reordered_fpreq_bitmask	440	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:1049:7:mat_mult_kernel_s8_s16_reordered_fpreq_mask	368	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:1174:7:mat_mult_kernel_s8_s16_reordered_fpreq_mask_partialCH	656	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:1333:7:mat_mult_kernel_s8_s16_reordered_fpreq_bitmask_partialCH	736	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:1514:7:mat_mult_kernel_s8_s16_reordered_fpreq_mask_partialCH_Multiple2	96	static
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:1664:7:mat_mult_kernel_s8_s16_reordered_fpreq_bitmask_partialCH_Multiple2	176	static
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/mat_mul_kernels_fpreq.c:1835:7:mat_mult_kernel3_input3_s8_s16_fpreq	1144	static,ignoring_inline_asm

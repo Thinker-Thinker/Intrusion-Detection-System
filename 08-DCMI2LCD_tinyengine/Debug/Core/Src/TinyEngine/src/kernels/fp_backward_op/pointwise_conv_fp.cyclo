@@ -1,0 +1,11 @@
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:23:20:mac_1row_10col_fp_IOHW_forint8w	1
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:38:20:mac_4row_4col_fp_IOHW_forint8w	1
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:61:20:mac_1row_4col_fp_IOHW_forint8w	1
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:875:20:assign_sum_to_pointwise_output_4row8col	97
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:911:20:assign_sum_to_pointwise_output_1row8col	25
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:969:20:assign_sum_to_pointwise_output_4row4col	49
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:989:20:assign_sum_to_pointwise_output_1row4col	13
+../Core/Src/TinyEngine/src/kernels/fp_backward_op/pointwise_conv_fp.c:26:22:pointwise_conv_fp_1row10col_10inputdepth_IOHW_int8weight	28
+../Core/Src/TinyEngine/src/kernels/fp_backward_op/pointwise_conv_fp.c:117:22:pointwise_conv_fp_4row4col_IOHW_int8weight	10
+../Core/Src/TinyEngine/src/kernels/fp_backward_op/pointwise_conv_fp.c:239:22:pointwise_conv_fp_4row4col_IOHW_int8weight_partialCH_8innercol	12
+../Core/Src/TinyEngine/src/kernels/fp_backward_op/pointwise_conv_fp.c:429:22:pointwise_conv_fp_4row4col_IOHW_int8weight_partialCH_4innercol	12

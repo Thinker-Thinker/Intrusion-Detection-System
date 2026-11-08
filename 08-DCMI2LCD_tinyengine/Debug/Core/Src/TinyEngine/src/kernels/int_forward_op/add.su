@@ -1,0 +1,11 @@
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:23:9:Add	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:26:9:ShiftRight	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:29:9:BitAnd	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:32:9:BitNot	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:35:9:MaskIfNonZero	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:39:9:MaskIfGreaterThan	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:42:9:MaskIfLessThan	16	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:46:23:SaturatingRoundingDoublingHighMul	88	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:55:24:RoundingDivideByPOT	56	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:64:23:MultiplyByQuantizedMultiplierSmallerThanOneExp	24	static
+../Core/Src/TinyEngine/src/kernels/int_forward_op/add.c:70:19:add	64	static

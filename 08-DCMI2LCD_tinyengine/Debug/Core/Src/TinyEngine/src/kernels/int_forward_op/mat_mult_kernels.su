@@ -1,0 +1,11 @@
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:25:7:mat_mult_kernel_s8_s16	1208	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:195:7:mat_mult_unloop18_s8_s16	1168	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:349:7:mat_mult_s16_unloop8	768	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:466:7:mat_mult_s16	624	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:578:7:mat_mult_s16_funroll27	1488	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:771:7:mat_mult_s16_funroll8	768	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:884:7:mat_mult_s16_funroll16	1088	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:1031:7:mat_mult_kernel_s8_s16_reordered_ch8	960	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:1145:7:mat_mult_kernel_s8_s16_reordered_ch16	1472	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:1301:7:mat_mult_kernel_s8_s16_reordered_ch24	1984	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/int_forward_op/mat_mult_kernels.c:1498:7:mat_mult_kernel_s8_s16_reordered_ch48	3520	static,ignoring_inline_asm

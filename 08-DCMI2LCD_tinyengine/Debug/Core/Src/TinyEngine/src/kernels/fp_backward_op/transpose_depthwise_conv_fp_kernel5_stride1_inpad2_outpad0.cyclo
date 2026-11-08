@@ -1,0 +1,4 @@
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:471:20:transpose_depthwise_mac_kernel5_2row_fp_uniweight	1
+/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include/nnfunctions_fp.h:534:20:transpose_depthwise_mac_kernel5_1row_fp_uniweight	1
+../Core/Src/TinyEngine/src/kernels/fp_backward_op/transpose_depthwise_conv_fp_kernel5_stride1_inpad2_outpad0.c:28:22:transpose_depthwise_conv_fp_kernel5_stride1_inpad2_outpad0_IOHW_int8weight_partialCH	22
+../Core/Src/TinyEngine/src/kernels/fp_backward_op/transpose_depthwise_conv_fp_kernel5_stride1_inpad2_outpad0.c:138:22:transpose_depthwise_conv_fp_kernel5_stride1_inpad2_outpad0_IOHW_int8weight	20

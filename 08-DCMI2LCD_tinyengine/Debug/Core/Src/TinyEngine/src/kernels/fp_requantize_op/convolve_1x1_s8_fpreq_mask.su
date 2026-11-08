@@ -1,0 +1,2 @@
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/convolve_1x1_s8_fpreq_mask.c:28:19:convolve_1x1_s8_fpreq_bitmask	544	static,ignoring_inline_asm
+../Core/Src/TinyEngine/src/kernels/fp_requantize_op/convolve_1x1_s8_fpreq_mask.c:151:19:convolve_1x1_s8_fpreq_mask	528	static,ignoring_inline_asm

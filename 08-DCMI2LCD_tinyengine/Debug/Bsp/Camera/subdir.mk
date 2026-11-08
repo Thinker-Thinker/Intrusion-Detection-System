@@ -1,0 +1,51 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+# Toolchain: GNU Tools for STM32 (14.3.rel1)
+################################################################################
+
+# Add inputs and outputs from these tool invocations to the build variables 
+C_SRCS += \
+../Bsp/Camera/camera.c \
+../Bsp/Camera/ov2640.c \
+../Bsp/Camera/ov2640_regs.c \
+../Bsp/Camera/ov5640.c \
+../Bsp/Camera/ov5640_regs.c \
+../Bsp/Camera/ov7670.c \
+../Bsp/Camera/ov7670_regs.c \
+../Bsp/Camera/ov7725.c \
+../Bsp/Camera/ov7725_regs.c 
+
+OBJS += \
+./Bsp/Camera/camera.o \
+./Bsp/Camera/ov2640.o \
+./Bsp/Camera/ov2640_regs.o \
+./Bsp/Camera/ov5640.o \
+./Bsp/Camera/ov5640_regs.o \
+./Bsp/Camera/ov7670.o \
+./Bsp/Camera/ov7670_regs.o \
+./Bsp/Camera/ov7725.o \
+./Bsp/Camera/ov7725_regs.o 
+
+C_DEPS += \
+./Bsp/Camera/camera.d \
+./Bsp/Camera/ov2640.d \
+./Bsp/Camera/ov2640_regs.d \
+./Bsp/Camera/ov5640.d \
+./Bsp/Camera/ov5640_regs.d \
+./Bsp/Camera/ov7670.d \
+./Bsp/Camera/ov7670_regs.d \
+./Bsp/Camera/ov7725.d \
+./Bsp/Camera/ov7725_regs.d 
+
+
+# Each subdirectory must supply rules for building sources it contributes
+Bsp/Camera/%.o Bsp/Camera/%.su Bsp/Camera/%.cyclo: ../Bsp/Camera/%.c Bsp/Camera/subdir.mk
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m7 -std=c99 -g3 -DDEBUG -DTFT96=1 -DUSE_PWR_LDO_SUPPLY -DUSE_HAL_DRIVER -DSTM32H723xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Bsp/Camera" -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Bsp/ST7735" -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Bsp" -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine" -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/include" -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Drivers/CMSIS/arm_cmsis" -I"/home/busoye_tm/Documents/tinyml/intrusion_detection_system/08-DCMI2LCD_tinyengine/Core/Src/TinyEngine/codegen/Include" -O0 -ffunction-sections -fdata-sections -fpermissive -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "$@"
+
+clean: clean-Bsp-2f-Camera
+
+clean-Bsp-2f-Camera:
+	-$(RM) ./Bsp/Camera/camera.cyclo ./Bsp/Camera/camera.d ./Bsp/Camera/camera.o ./Bsp/Camera/camera.su ./Bsp/Camera/ov2640.cyclo ./Bsp/Camera/ov2640.d ./Bsp/Camera/ov2640.o ./Bsp/Camera/ov2640.su ./Bsp/Camera/ov2640_regs.cyclo ./Bsp/Camera/ov2640_regs.d ./Bsp/Camera/ov2640_regs.o ./Bsp/Camera/ov2640_regs.su ./Bsp/Camera/ov5640.cyclo ./Bsp/Camera/ov5640.d ./Bsp/Camera/ov5640.o ./Bsp/Camera/ov5640.su ./Bsp/Camera/ov5640_regs.cyclo ./Bsp/Camera/ov5640_regs.d ./Bsp/Camera/ov5640_regs.o ./Bsp/Camera/ov5640_regs.su ./Bsp/Camera/ov7670.cyclo ./Bsp/Camera/ov7670.d ./Bsp/Camera/ov7670.o ./Bsp/Camera/ov7670.su ./Bsp/Camera/ov7670_regs.cyclo ./Bsp/Camera/ov7670_regs.d ./Bsp/Camera/ov7670_regs.o ./Bsp/Camera/ov7670_regs.su ./Bsp/Camera/ov7725.cyclo ./Bsp/Camera/ov7725.d ./Bsp/Camera/ov7725.o ./Bsp/Camera/ov7725.su ./Bsp/Camera/ov7725_regs.cyclo ./Bsp/Camera/ov7725_regs.d ./Bsp/Camera/ov7725_regs.o ./Bsp/Camera/ov7725_regs.su
+
+.PHONY: clean-Bsp-2f-Camera
+
