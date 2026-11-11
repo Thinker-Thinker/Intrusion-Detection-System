@@ -53,7 +53,8 @@ With an ST-Link on the SWD header, use Run/Debug in CubeIDE or CubeProgrammer's 
 ### USB protocol
 
 Host sends single ASCII bytes: `C` stream continuously, `P` pause, `S` one frame,
-`I` info line. Each frame is a 16-byte little-endian header
-(`"FRM1"`, width u16, height u16, format u16 = 1 for RGB565, seq u16, length u32)
-followed by `width*height*2` bytes of RGB565, high byte first.
+`I` info line. Each frame is a 20-byte little-endian header
+(`"FRM2"`, width u16, height u16, format u16 = 1 for RGB565, seq u16, length u32,
+CRC-32 u32 of the payload) followed by `width*height*2` bytes of RGB565, high byte first.
+The PC tool drops any frame whose CRC does not match and shows the count as "damaged".
 USB full speed gives roughly 2-4 frames per second at QVGA, enough for collecting data.

@@ -84,13 +84,33 @@ uint32_t Camera_FPS = 0;
 /* Frame header sent before every frame on the USB virtual COM port.
  * Little-endian, 16 bytes. The host tool (tools/capture.py) parses it. */
 typedef struct __attribute__((packed)) {
-  char     magic[4];   /* "FRM1" */
+  char     magic[4];   /* "FRM2" */
   uint16_t width;
   uint16_t height;
   uint16_t format;     /* 1 = RGB565, bytes in sensor order (high byte first) */
   uint16_t seq;
   uint32_t length;     /* payload bytes that follow */
+  uint32_t crc32;      /* CRC-32 (zlib/IEEE) of the payload, lets the PC drop damaged frames */
 } frame_header_t;
+
+static uint32_t crc_table[256];
+
+static void crc32_init(void)
+{
+  for (uint32_t i = 0; i < 256; i++)
+  {
+    uint32_t c = i;
+    for (int k = 0; k < 8; k++) c = (c & 1U) ? (0xEDB88320U ^ (c >> 1)) : (c >> 1);
+    crc_table[i] = c;
+  }
+}
+
+static uint32_t crc32_calc(const uint8_t *p, uint32_t n)
+{
+  uint32_t c = 0xFFFFFFFFU;
+  while (n--) c = crc_table[(c ^ *p++) & 0xFFU] ^ (c >> 8);
+  return c ^ 0xFFFFFFFFU;
+}
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -134,8 +154,9 @@ static void send_text(const char *msg)
 static int send_frame(uint16_t seq)
 {
   frame_header_t h;
-  memcpy(h.magic, "FRM1", 4);
+  memcpy(h.magic, "FRM2", 4);
   h.width = FRAME_W; h.height = FRAME_H; h.format = 1; h.seq = seq; h.length = FRAME_BYTES;
+  h.crc32 = crc32_calc(frame, FRAME_BYTES);
   if (CDC_SendBlocking((const uint8_t *)&h, sizeof h, 500) != 0) return -1;
   return CDC_SendBlocking(frame, FRAME_BYTES, 2000);
 }
@@ -238,6 +259,7 @@ int main(void)
   MX_SPI4_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  crc32_init();
   MX_USB_DEVICE_Init();
   board_button_init();
   board_led_init();

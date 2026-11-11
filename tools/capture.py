@@ -22,6 +22,7 @@ Keys (click the preview window first):
 import argparse
 import re
 import struct
+import zlib
 import sys
 import time
 from datetime import datetime
@@ -35,8 +36,9 @@ try:
 except ImportError:
     sys.exit("pyserial missing: pip install -r tools/requirements.txt")
 
-HEADER = struct.Struct("<4sHHHHI")  # magic, width, height, format, seq, length
-MAGIC = b"FRM1"
+HEADER = struct.Struct("<4sHHHHI")     # FRM1: magic, width, height, format, seq, length
+HEADER2 = struct.Struct("<4sHHHHII")   # FRM2: ... + crc32 of the payload
+MAGIC = b"FRM"
 ST_VID, ST_CDC_PID = 0x0483, 0x5740
 
 DEFAULT_LABELS = [
@@ -61,11 +63,13 @@ def rgb565_to_bgr(payload: bytes, w: int, h: int, big_endian: bool = True) -> np
 
 
 class FrameReader:
-    """Finds 'FRM1' headers in the byte stream and returns whole frames."""
+    """Finds 'FRM1'/'FRM2' headers in the byte stream and returns whole frames.
+    FRM2 frames carry a CRC-32; damaged ones are counted in .bad and skipped."""
 
     def __init__(self, ser):
         self.ser = ser
         self.buf = bytearray()
+        self.bad = 0
 
     def _fill(self, n):
         while len(self.buf) < n:
@@ -91,16 +95,32 @@ class FrameReader:
                 for line in re.findall(rb"INFO [ -~]{1,120}", bytes(self.buf[:i])):
                     print("[board]", line.decode("ascii"))
                 del self.buf[:i]
-            if not self._fill(HEADER.size):
+            if not self._fill(HEADER2.size):
                 return None
-            magic, w, h, fmt, seq, length = HEADER.unpack_from(self.buf)
+            version = self.buf[3:4]
+            if version == b"2":
+                hdr = HEADER2
+                magic, w, h, fmt, seq, length, crc = hdr.unpack_from(self.buf)
+            elif version == b"1":
+                hdr = HEADER
+                magic, w, h, fmt, seq, length = hdr.unpack_from(self.buf)
+                crc = None
+            else:
+                del self.buf[:3]  # "FRM" inside pixel data, keep looking
+                continue
             if length != w * h * 2 or w == 0 or h == 0:
                 del self.buf[:4]  # false match, resync
                 continue
-            if not self._fill(HEADER.size + length):
+            if not self._fill(hdr.size + length):
                 return None
-            payload = bytes(self.buf[HEADER.size:HEADER.size + length])
-            del self.buf[:HEADER.size + length]
+            payload = bytes(self.buf[hdr.size:hdr.size + length])
+            if crc is not None and zlib.crc32(payload) != crc:
+                # Damaged in transit: skip only this header, so a following
+                # frame's header inside the bad payload is still found.
+                self.bad += 1
+                del self.buf[:4]
+                continue
+            del self.buf[:hdr.size + length]
             return (w, h, fmt, seq, length), payload
 
 
@@ -157,6 +177,8 @@ def main():
             save_now = recording
             view = cv2.resize(img, (w * args.scale, h * args.scale), interpolation=cv2.INTER_NEAREST)
             bar = f"[{label_i + 1}] {label}  saved:{saved[label]}  {fps:.1f} fps"
+            if reader.bad:
+                bar += f"  damaged:{reader.bad}"
             if recording:
                 bar += "  REC"
             cv2.rectangle(view, (0, 0), (view.shape[1], 26), (0, 0, 0), -1)
