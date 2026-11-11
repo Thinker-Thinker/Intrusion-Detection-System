@@ -20,6 +20,7 @@ Keys (click the preview window first):
     q / ESC  quit
 """
 import argparse
+import re
 import struct
 import sys
 import time
@@ -85,9 +86,10 @@ class FrameReader:
                 del self.buf[:-3]
                 continue
             if i:
-                text = bytes(self.buf[:i]).decode(errors="ignore").strip()
-                if text:
-                    print("[board]", text)
+                # Bytes before a header are either the board's INFO line or the
+                # tail of a frame we joined mid-way (binary). Print only INFO lines.
+                for line in re.findall(rb"INFO [ -~]{1,120}", bytes(self.buf[:i])):
+                    print("[board]", line.decode("ascii"))
                 del self.buf[:i]
             if not self._fill(HEADER.size):
                 return None
