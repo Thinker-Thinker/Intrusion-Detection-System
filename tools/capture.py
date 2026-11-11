@@ -16,6 +16,7 @@ Keys (click the preview window first):
     1-9      choose the label shown at the top of the window
     SPACE    save the current frame under that label
     r        start/stop recording (saves every frame, ~2-4 per second)
+    [ / ]    camera brightness target down / up (shown as "bright:" in the bar)
     b        swap RGB565 byte order (press if colours look wrong)
     q / ESC  quit
 """
@@ -70,6 +71,7 @@ class FrameReader:
         self.ser = ser
         self.buf = bytearray()
         self.bad = 0
+        self.info = {}  # latest INFO fields from the board, e.g. {"ae": "0x78"}
 
     def _fill(self, n):
         while len(self.buf) < n:
@@ -93,7 +95,9 @@ class FrameReader:
                 # Bytes before a header are either the board's INFO line or the
                 # tail of a frame we joined mid-way (binary). Print only INFO lines.
                 for line in re.findall(rb"INFO [ -~]{1,120}", bytes(self.buf[:i])):
-                    print("[board]", line.decode("ascii"))
+                    text = line.decode("ascii")
+                    print("[board]", text)
+                    self.info.update(dict(kv.split("=", 1) for kv in text.split()[1:] if "=" in kv))
                 del self.buf[:i]
             if not self._fill(HEADER2.size):
                 return None
@@ -177,6 +181,8 @@ def main():
             save_now = recording
             view = cv2.resize(img, (w * args.scale, h * args.scale), interpolation=cv2.INTER_NEAREST)
             bar = f"[{label_i + 1}] {label}  saved:{saved[label]}  {fps:.1f} fps"
+            if "ae" in reader.info:
+                bar += f"  bright:{reader.info['ae']} gain:{reader.info.get('gain', '?')}"
             if reader.bad:
                 bar += f"  damaged:{reader.bad}"
             if recording:
@@ -195,6 +201,8 @@ def main():
                 save_now = True
             elif key == ord("r"):
                 recording = not recording
+            elif key in (ord("["), ord("]")):
+                ser.write(bytes([key]))  # board answers with an INFO line
             elif key == ord("b"):
                 big_endian = not big_endian
                 print("byte order:", "big-endian" if big_endian else "little-endian")

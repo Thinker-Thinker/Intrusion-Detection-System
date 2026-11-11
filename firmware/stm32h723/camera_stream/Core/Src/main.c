@@ -146,6 +146,32 @@ static void show_preview(void)
   ST7735_FillRGBRect(&st7735_pObj, 0, 0, (uint8_t *)preview, PREVIEW_W, PREVIEW_H);
 }
 
+/* ---- Exposure target (OV7725 AEC/AGC stable region) -------------------
+ * AEW/AEB = upper/lower brightness limits the sensor's auto-exposure aims
+ * between; VPT = the band outside which it adjusts quickly. Raising them
+ * makes the picture brighter, lowering them darker. '[' / ']' from the PC. */
+#define OV7725_GAIN 0x00
+#define OV7725_AEW  0x24
+#define OV7725_AEB  0x25
+#define OV7725_VPT  0x26
+static uint8_t ae_target;      /* = AEW; AEB kept 0x10 below it */
+
+static uint8_t cam_rd(uint8_t reg) { uint8_t v = 0; Camera_ReadReg(&hcamera, reg, &v); return v; }
+static void cam_wr(uint8_t reg, uint8_t v) { Camera_WriteReg(&hcamera, reg, &v); }
+
+static void set_ae_target(int t)
+{
+  if (t < 0x20) t = 0x20;
+  if (t > 0xE0) t = 0xE0;
+  uint8_t aew = (uint8_t)t, aeb = (uint8_t)(t - 0x10);
+  uint8_t hi = (uint8_t)(((aew >> 4) + 1) > 0xF ? 0xF : ((aew >> 4) + 1));
+  uint8_t lo = (uint8_t)((aeb >> 4) > 0 ? (aeb >> 4) - 1 : 0);
+  cam_wr(OV7725_AEW, aew);
+  cam_wr(OV7725_AEB, aeb);
+  cam_wr(OV7725_VPT, (uint8_t)((hi << 4) | lo));
+  ae_target = aew;
+}
+
 static void send_text(const char *msg)
 {
   CDC_SendBlocking((const uint8_t *)msg, (uint32_t)strlen(msg), 200);
@@ -272,6 +298,8 @@ int main(void)
   ST7735_LCD_Driver.FillRect(&st7735_pObj, 0, 58, ST7735Ctx.Width, 16, BLACK);
   sprintf((char *)text, "Cam id:0x%x", hcamera.device_id);
   LCD_ShowString(4, 58, ST7735Ctx.Width, 16, 12, text);
+  ae_target = cam_rd(OV7725_AEW);
+  if (ae_target < 0x20 || ae_target > 0xE0) set_ae_target(0x78);
   HAL_Delay(1000);
 
   uint8_t streaming = 0;   /* 'C' = continuous, 'P' = pause, 'S' = one frame */
@@ -296,11 +324,15 @@ int main(void)
       case 'S': case 's': send_next = 1; break;
       case 'C': case 'c': streaming = 1; break;
       case 'P': case 'p': streaming = 0; break;
+      case ']': set_ae_target(ae_target + 0x08); goto info;
+      case '[': set_ae_target(ae_target - 0x08); goto info;
       case 'I': case 'i':
+      info:
       {
         char info[96];
-        snprintf(info, sizeof info, "INFO cam=0x%04x w=%d h=%d fmt=RGB565 fps=%lu\n",
-                 hcamera.device_id, FRAME_W, FRAME_H, (unsigned long)Camera_FPS);
+        snprintf(info, sizeof info, "INFO cam=0x%04x w=%d h=%d fmt=RGB565 fps=%lu ae=0x%02x gain=0x%02x\n",
+                 hcamera.device_id, FRAME_W, FRAME_H, (unsigned long)Camera_FPS,
+                 ae_target, cam_rd(OV7725_GAIN));
         send_text(info);
         break;
       }
