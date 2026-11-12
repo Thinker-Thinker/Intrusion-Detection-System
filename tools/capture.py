@@ -16,7 +16,8 @@ Keys (click the preview window first):
     1-9      choose the label shown at the top of the window
     SPACE    save the current frame under that label
     r        start/stop recording (saves every frame, ~2-4 per second)
-    [ / ]    camera brightness target down / up (shown as "bright:" in the bar)
+    a        auto-brightness on/off (on at power-up; adjusts to the face area)
+    [ / ]    manual brightness down / up (switches auto off; "a" turns it back on)
     b        swap RGB565 byte order (press if colours look wrong)
     q / ESC  quit
 """
@@ -96,8 +97,11 @@ class FrameReader:
                 # tail of a frame we joined mid-way (binary). Print only INFO lines.
                 for line in re.findall(rb"INFO [ -~]{1,120}", bytes(self.buf[:i])):
                     text = line.decode("ascii")
-                    print("[board]", text)
-                    self.info.update(dict(kv.split("=", 1) for kv in text.split()[1:] if "=" in kv))
+                    new = dict(kv.split("=", 1) for kv in text.split()[1:] if "=" in kv)
+                    key_fields = ("cam", "ae", "auto")
+                    if any(new.get(k) != self.info.get(k) for k in key_fields):
+                        print("[board]", text)  # only when something meaningful changed
+                    self.info.update(new)
                 del self.buf[:i]
             if not self._fill(HEADER2.size):
                 return None
@@ -162,6 +166,7 @@ def main():
     label_i, recording, big_endian = 0, False, not args.little_endian
     saved = {l: len(list((out / l).glob("*.png"))) for l in labels}
     t_last, fps = time.time(), 0.0
+    last_info = 0.0
 
     print(f"Streaming from {port}. Press 1-{len(labels)} to pick a label, SPACE to save, q to quit.")
     try:
@@ -182,7 +187,8 @@ def main():
             view = cv2.resize(img, (w * args.scale, h * args.scale), interpolation=cv2.INTER_NEAREST)
             bar = f"[{label_i + 1}] {label}  saved:{saved[label]}  {fps:.1f} fps"
             if "ae" in reader.info:
-                bar += f"  bright:{reader.info['ae']} gain:{reader.info.get('gain', '?')}"
+                mode = "auto" if reader.info.get("auto") == "1" else "manual"
+                bar += f"  {mode} bright:{reader.info['ae']} face-area:{reader.info.get('luma', '?')}"
             if reader.bad:
                 bar += f"  damaged:{reader.bad}"
             if recording:
@@ -201,8 +207,11 @@ def main():
                 save_now = True
             elif key == ord("r"):
                 recording = not recording
-            elif key in (ord("["), ord("]")):
+            elif key in (ord("["), ord("]"), ord("a")):
                 ser.write(bytes([key]))  # board answers with an INFO line
+            elif now - last_info > 2.0:
+                ser.write(b"I")          # refresh the brightness readout
+                last_info = now
             elif key == ord("b"):
                 big_endian = not big_endian
                 print("byte order:", "big-endian" if big_endian else "little-endian")

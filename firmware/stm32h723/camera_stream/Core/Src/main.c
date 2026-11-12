@@ -172,6 +172,57 @@ static void set_ae_target(int t)
   ae_target = aew;
 }
 
+/* ---- Face-weighted auto-brightness --------------------------------------
+ * The sensor's own auto-exposure meters the whole frame, so a bright doorway
+ * or sky behind a person darkens their face. This loop measures only the
+ * centre of the frame (where the face is) and nudges the sensor's
+ * brightness target until the centre sits near AUTO_LUMA_TARGET.
+ * Later: measure the detected face box instead of the fixed centre, and when
+ * the target is at its maximum and gain stays high, raise the LED (PWM). */
+#define AUTO_LUMA_TARGET   120   /* desired mean luma of the centre, 0-255 */
+#define AUTO_LUMA_DEADBAND  12   /* no change while within +/- this */
+#define AUTO_PERIOD_MS     600   /* one step at most this often (no flicker) */
+#define AUTO_STEP         0x08
+#define AE_MIN            0x30
+#define AE_MAX            0xD8
+static uint8_t auto_bright = 1;  /* 'A' from the PC toggles; [ / ] turn it off */
+static uint8_t centre_luma;
+static uint32_t last_auto_tick;
+
+/* Mean luma (BT.601, 0-255) of the centre 50% x 60% of the frame,
+ * sampling every 4th pixel and every 4th row. Pixels are RGB565, high byte first. */
+static uint8_t measure_centre_luma(void)
+{
+  uint32_t sum = 0, n = 0;
+  for (int y = FRAME_H / 5; y < FRAME_H * 4 / 5; y += 4)
+  {
+    const uint8_t *row = &frame[(y * FRAME_W) * 2];
+    for (int x = FRAME_W / 4; x < FRAME_W * 3 / 4; x += 4)
+    {
+      uint16_t px = (uint16_t)((row[2 * x] << 8) | row[2 * x + 1]);
+      uint32_t r = (px >> 8) & 0xF8, g = (px >> 3) & 0xFC, b = (px << 3) & 0xF8;
+      sum += (77 * r + 150 * g + 29 * b) >> 8;
+      n++;
+    }
+  }
+  return (uint8_t)(n ? sum / n : 0);
+}
+
+static void auto_brightness_step(void)
+{
+  centre_luma = measure_centre_luma();
+  if (!auto_bright || HAL_GetTick() - last_auto_tick < AUTO_PERIOD_MS) return;
+  last_auto_tick = HAL_GetTick();
+  int t = ae_target;
+  if (centre_luma < AUTO_LUMA_TARGET - AUTO_LUMA_DEADBAND)      t += AUTO_STEP;
+  else if (centre_luma > AUTO_LUMA_TARGET + AUTO_LUMA_DEADBAND) t -= AUTO_STEP;
+  else return;
+  if (t < AE_MIN) t = AE_MIN;
+  if (t > AE_MAX) t = AE_MAX;
+  if (t != ae_target) set_ae_target(t);
+  /* TODO (LED): if t == AE_MAX and gain stays high, increase LED PWM here. */
+}
+
 static void send_text(const char *msg)
 {
   CDC_SendBlocking((const uint8_t *)msg, (uint32_t)strlen(msg), 200);
@@ -324,15 +375,16 @@ int main(void)
       case 'S': case 's': send_next = 1; break;
       case 'C': case 'c': streaming = 1; break;
       case 'P': case 'p': streaming = 0; break;
-      case ']': set_ae_target(ae_target + 0x08); goto info;
-      case '[': set_ae_target(ae_target - 0x08); goto info;
+      case ']': auto_bright = 0; set_ae_target(ae_target + 0x08); goto info;
+      case '[': auto_bright = 0; set_ae_target(ae_target - 0x08); goto info;
+      case 'A': case 'a': auto_bright = !auto_bright; goto info;
       case 'I': case 'i':
       info:
       {
-        char info[96];
-        snprintf(info, sizeof info, "INFO cam=0x%04x w=%d h=%d fmt=RGB565 fps=%lu ae=0x%02x gain=0x%02x\n",
+        char info[128];
+        snprintf(info, sizeof info, "INFO cam=0x%04x w=%d h=%d fmt=RGB565 fps=%lu ae=0x%02x gain=0x%02x auto=%d luma=%d\n",
                  hcamera.device_id, FRAME_W, FRAME_H, (unsigned long)Camera_FPS,
-                 ae_target, cam_rd(OV7725_GAIN));
+                 ae_target, cam_rd(OV7725_GAIN), auto_bright, centre_luma);
         send_text(info);
         break;
       }
@@ -344,6 +396,7 @@ int main(void)
     {
       /* The DMA wrote straight to RAM behind the D-cache: drop stale lines. */
       SCB_InvalidateDCache_by_Addr((uint32_t *)frame, FRAME_BYTES);
+      auto_brightness_step();
 
       if ((streaming || send_next) && CDC_HostConnected())
       {
