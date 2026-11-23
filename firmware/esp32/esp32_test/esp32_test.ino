@@ -10,6 +10,8 @@
     p  ping the STM32 over UART2 (GPIO16 = RX2 <- STM32 PA9, GPIO17 = TX2 -> STM32 PA10)
     s  servo sweep on GPIO18 (power test only: servo signal wire to GPIO18), x = stop
     b  blink the on-board LED (GPIO2) 5 times
+    t  run the STM32 hardware test (LEDs, buzzer, strip, servo)
+    >  send a command to the STM32, e.g.  >SERVO 90   >BEEP   >LED G   >STRIP ON   >STATUS   >SWEEP   >STOP
 
   Anything the STM32 sends on UART2 is printed as "[STM32] ...".
   Works with ESP32 Arduino core 2.x and 3.x.
@@ -96,12 +98,14 @@ void blink() {
 
 void help() {
   Serial.println("\nCommands: i=info  w=wifi scan  l=UART loopback  p=ping STM32  s=servo sweep  x=stop  b=blink");
+  Serial.println("STM32:    t=full hardware test   >COMMAND e.g. >SERVO 90  >BEEP  >LED G  >LED R  >STRIP ON  >STATUS");
 }
 
 void setup() {
   Serial.begin(115200);
   delay(500);
   pinMode(LED_PIN, OUTPUT);
+  WiFi.mode(WIFI_STA);   // start the radio so the MAC address reads correctly
   Link.begin(UART2_BAUD, SERIAL_8N1, RX2_PIN, TX2_PIN);
   servoBegin(); servoWriteUs(1500);
   Serial.println("\n=== ESP32 door-unit test ===");
@@ -120,6 +124,12 @@ void loop() {
       case 's': sweeping = true; Serial.println("Servo sweeping on GPIO18. Watch the 5 V rail; type x to stop."); break;
       case 'x': sweeping = false; servoWriteUs(1500); Serial.println("Servo stopped at centre."); break;
       case 'b': blink(); break;
+      case 't': Link.print("TEST\n"); Serial.println("Sent TEST to the STM32: watch the LEDs, buzzer, strip and servo."); break;
+      case '>': {
+        String cmd = Serial.readStringUntil('\n'); cmd.trim();
+        Link.print(cmd + "\n"); Serial.println("-> STM32: " + cmd);
+        break;
+      }
       case '\n': case '\r': break;
       default: help();
     }

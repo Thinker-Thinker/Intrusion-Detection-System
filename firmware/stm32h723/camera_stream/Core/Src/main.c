@@ -43,6 +43,7 @@
 #include "camera.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
+#include "hwtest.h"
 #include <string.h>
 #include <stdio.h>
 /* USER CODE END Includes */
@@ -357,6 +358,7 @@ int main(void)
   int8_t  send_next = 0;
   uint16_t seq = 0;
   uint32_t last_fps_tick = HAL_GetTick(), frames = 0;
+  hwtest_init();
   start_capture();
   /* USER CODE END 2 */
 
@@ -367,6 +369,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    hwtest_poll();
     int c;
     while ((c = CDC_ReadByte()) >= 0)
     {
@@ -412,6 +415,7 @@ int main(void)
       }
       sprintf((char *)text, "%luFPS %s", (unsigned long)Camera_FPS, streaming ? "USB" : "");
       LCD_ShowString(5, 5, 80, 16, 12, text);
+      LCD_ShowString(5, 66, 150, 16, 12, (uint8_t *)hwtest_lcd_line());
       board_led_toggle();
       start_capture();
     }
