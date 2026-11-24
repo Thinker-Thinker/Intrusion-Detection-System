@@ -28,7 +28,9 @@ except ImportError:
 
 ST_VID = 0x0483
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_WEIGHTS = ROOT / "firmware/stm32h723/door_unit/build/rec_weights.bin"
+WEIGHTS_CANDIDATES = [ROOT / "firmware/stm32h723/door_unit/build/rec_weights.bin",   # after `make`
+                      ROOT / "firmware/stm32h723/rec_weights.bin"]                    # downloaded copy
+DEFAULT_WEIGHTS = next((p for p in WEIGHTS_CANDIDATES if p.exists()), WEIGHTS_CANDIDATES[0])
 CHUNK = 4096
 
 
