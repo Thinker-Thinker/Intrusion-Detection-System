@@ -4,8 +4,15 @@
 #include <stdio.h>
 #include <string.h>
 #include "face_models.h"
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#endif
 int main(void)
 {
+#ifdef _WIN32
+  _setmode(_fileno(stdin), _O_BINARY); _setmode(_fileno(stdout), _O_BINARY);
+#endif
   static uint8_t buf[320 * 240 * 2];
   static int8_t crop112[112 * 112 * 3], crop64[64 * 64 * 3];
   while (fread(buf, 1, sizeof buf, stdin) == sizeof buf) {
@@ -20,7 +27,7 @@ int main(void)
       rec[15] = fm_spoof_prob(crop64);
       fm_embed(crop112, &rec[16]);
     }
-    int32_t nn = n; fwrite(&nn, 4, 1, stdout); fwrite(rec, 4, sizeof rec / 4, stdout);
+    int32_t nn = n; fwrite(&nn, 4, 1, stdout); fwrite(rec, 4, sizeof rec / 4, stdout); fflush(stdout);
   }
   return 0;
 }
