@@ -15,4 +15,5 @@ void hw_alarm(uint32_t ms);
 int  hw_pir(void);
 int  hw_exit_pressed(void);
 int  hw_door_open(void);
+void hw_test_outputs(void);
 #endif

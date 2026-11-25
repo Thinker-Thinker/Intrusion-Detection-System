@@ -460,7 +460,7 @@ void door_poll(void)
 /* ---------------------------------------------------------------- commands */
 static void help(int src)
 {
-  reply(src, "Commands: INFO SELFTEST LIST ENROL <name> [n] CANCEL DELETE <name>|ALL THRESH <x> OPEN DEBUG 0|1 "
+  reply(src, "Commands: INFO SELFTEST TEST SERVO <deg> BEEP LIST ENROL <name> [n] CANCEL DELETE <name>|ALL THRESH <x> OPEN DEBUG 0|1 "
              "REED 0|1 SNAP STREAM 0|1 AE +|- AUTO 0|1 (and PING STATUS TEST SERVO BEEP LED on the ESP32 link)\n");
 }
 
@@ -514,6 +514,9 @@ void door_command(char *line, int src)
       reply(src, s);
     }
   }
+  else if (!strcmp(u, "TEST")) { hw_test_outputs(); reply(src, "OK testing: green LED, red LED, buzzer, servo 0-90-0 (about 4 s)\n"); }
+  else if (!strncmp(u, "SERVO ", 6)) { hw_servo_deg(atoi(arg)); reply(src, "OK servo\n"); }
+  else if (!strcmp(u, "BEEP")) { hw_beep(200); reply(src, "OK beep\n"); }
   else if (!strcmp(u, "SELFTEST")) { selftest_src = src; reply(src, "OK self-test runs on the next camera frame\n"); }
   else if (!strcmp(u, "CANCEL")) { enrol_goal = 0; reply(src, "OK\n"); show("Ready", C_WHITE); }
   else if (!strncmp(u, "DELETE ", 7)) {

@@ -193,6 +193,7 @@ void hw_alarm(uint32_t ms) { alarm_until = HAL_GetTick() + ms; }    /* 4 Hz on/o
 int hw_pir(void) { return PIR(); }
 int hw_exit_pressed(void) { return BTN(); }
 int hw_door_open(void) { return DOOR_OPEN(); }
+void hw_test_outputs(void) { test_step = 0; test_t = 0; }   /* LEDs, buzzer, servo, one after another */
 
 static void test_run(void)      /* non-blocking: one step every 600 ms */
 {

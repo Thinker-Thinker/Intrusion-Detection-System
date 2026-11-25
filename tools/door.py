@@ -2,6 +2,7 @@
 
     python tools/door.py info                      # model / flash / people / timings
     python tools/door.py selftest                  # run the models on a built-in face; should say PASS
+    python tools/door.py send TEST                 # green LED, red LED, buzzer, servo 0-90-0
     python tools/door.py flash-model               # upload build/rec_weights.bin to the external flash (once)
     python tools/door.py enrol Thinker             # stand in front of the camera; 10 samples (~5 s)
     python tools/door.py list
