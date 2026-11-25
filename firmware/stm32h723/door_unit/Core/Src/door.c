@@ -5,6 +5,7 @@
 #include "extflash.h"
 #include "hwtest.h"
 #include "usbd_cdc_if.h"
+#include "selftest_data.h"
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,7 +28,8 @@
 #define ALERT_WINDOW_MS  60000
 #define ENROL_SAMPLES    10
 #define ENROL_GAP_MS     300
-#define ENROL_TIMEOUT_MS 45000
+#define ENROL_TIMEOUT_MS 60000
+#define ENROL_SAME_COS   0.30f  /* a sample this far from the samples so far is someone else (or a bad frame) */
 #define MAX_PEOPLE       32
 #define NAME_LEN         24
 
@@ -42,7 +44,7 @@ static int n_people;
 
 /* ---------------------------------------------------------------- state */
 static float thresh = DEFAULT_THRESH;
-static int debug_src, reed_alarm, snap_req, stream_on;
+static int debug_src, reed_alarm, snap_req, stream_on, selftest_src;
 
 static float emb[FM_EMB], emb_sum[FM_EMB];
 static int n_sum, spoof_run;
@@ -207,15 +209,35 @@ static void enrol_step(const vis_face_t *f, float p_spoof)
     snprintf(s, sizeof s, "ERR enrol timeout (%d/%d samples)\n", enrol_n, enrol_goal);
     reply(enrol_src, s); enrol_goal = 0; show("Enrol failed", C_RED); return;
   }
-  if (!f) { show("Enrol: look here", C_CYAN); return; }
-  if (f->box[2] - f->box[0] < ENROL_MIN_PX) { show("Enrol: come closer", C_CYAN); return; }
-  if (p_spoof >= SPOOF_P) { show("Enrol: not live?", C_YELLOW); return; }
-  if (now - enrol_last < ENROL_GAP_MS) return;
-  fm_embed(FM_CROP112, emb);
-  if (enrol_n >= 3) {                       /* same person as the samples so far? */
-    float d = 0, n = 0;
-    for (int i = 0; i < FM_EMB; i++) { d += emb[i] * enrol_sum[i]; n += enrol_sum[i] * enrol_sum[i]; }
-    if (d / sqrtf(n + 1e-12f) < 0.4f) { show("Enrol: one person", C_YELLOW); return; }
+  /* why a frame was skipped: shown on the LCD and sent to the PC every 2 s */
+  static uint32_t why_t;
+  char why[48] = "";
+  if (!f) { show("Enrol: look here", C_CYAN); snprintf(why, sizeof why, "no face"); }
+  else if (f->box[2] - f->box[0] < ENROL_MIN_PX) {
+    show("Enrol: come closer", C_CYAN);
+    snprintf(why, sizeof why, "face %d px wide, need %d: come closer", (int)(f->box[2] - f->box[0]), ENROL_MIN_PX);
+  }
+  else if (p_spoof >= SPOOF_P) { show("Enrol: not live?", C_YELLOW); snprintf(why, sizeof why, "liveness says photo/screen (%.2f)", p_spoof); }
+  else if (now - enrol_last < ENROL_GAP_MS) return;
+  else {
+    fm_embed(FM_CROP112, emb);
+    if (enrol_n >= 3) {                       /* same person as the samples so far? */
+      float d = 0, n = 0;
+      for (int i = 0; i < FM_EMB; i++) { d += emb[i] * enrol_sum[i]; n += enrol_sum[i] * enrol_sum[i]; }
+      float c = d / sqrtf(n + 1e-12f);
+      if (c < ENROL_SAME_COS) {
+        show("Enrol: hold still", C_YELLOW);
+        snprintf(why, sizeof why, "frame unlike the others (%.2f): face the camera", c);
+      }
+    }
+  }
+  if (why[0]) {
+    if (now - why_t > 2000) {
+      char m[80]; why_t = now;
+      snprintf(m, sizeof m, "ENROL %d/%d waiting: %s\n", enrol_n, enrol_goal, why);
+      reply(enrol_src, m);
+    }
+    return;
   }
   for (int i = 0; i < FM_EMB; i++) enrol_sum[i] += emb[i];
   enrol_n++; enrol_last = now;
@@ -238,8 +260,32 @@ static void enrol_step(const vis_face_t *f, float p_spoof)
   hold_until = HAL_GetTick() + 1500;
 }
 
+/* Liveness + recognition on a built-in crop, compared with the PC's answer. Runs from door_process(),
+ * when the camera DMA is idle (the models use the frame's RAM). */
+static void run_selftest(int src)
+{
+  char s[160];
+  uint32_t t0 = HAL_GetTick();
+  memcpy(FM_CROP64, st_crop64, sizeof st_crop64);
+  float ps = fm_spoof_prob(FM_CROP64);
+  uint32_t t1 = HAL_GetTick();
+  float c = -2;
+  if (xf_rec_valid()) {
+    memcpy(FM_CROP112, st_crop112, sizeof st_crop112);
+    fm_embed(FM_CROP112, emb);
+    c = 0;
+    for (int i = 0; i < FM_EMB; i++) c += emb[i] * st_emb[i];
+  }
+  uint32_t t2 = HAL_GetTick();
+  snprintf(s, sizeof s, "SELFTEST rec_cos=%.5f (want 1.0000) spoof=%.4f (want %.4f) liv=%lums rec=%lums %s\n",
+           c, ps, ST_SPOOF, (unsigned long)(t1 - t0), (unsigned long)(t2 - t1),
+           (c > 0.999f && fabsf(ps - ST_SPOOF) < 0.01f) ? "PASS" : "FAIL");
+  reply(src, s);
+}
+
 void door_process(uint8_t *frame)
 {
+  if (selftest_src) { int src = selftest_src; selftest_src = 0; run_selftest(src); return; }
   uint32_t t0 = HAL_GetTick(), now = t0;
   frame_ms = now - last_frame_t; last_frame_t = now;
   t_liv = t_rec = 0;
@@ -414,7 +460,7 @@ void door_poll(void)
 /* ---------------------------------------------------------------- commands */
 static void help(int src)
 {
-  reply(src, "Commands: INFO LIST ENROL <name> [n] CANCEL DELETE <name>|ALL THRESH <x> OPEN DEBUG 0|1 "
+  reply(src, "Commands: INFO SELFTEST LIST ENROL <name> [n] CANCEL DELETE <name>|ALL THRESH <x> OPEN DEBUG 0|1 "
              "REED 0|1 SNAP STREAM 0|1 AE +|- AUTO 0|1 (and PING STATUS TEST SERVO BEEP LED on the ESP32 link)\n");
 }
 
@@ -468,6 +514,7 @@ void door_command(char *line, int src)
       reply(src, s);
     }
   }
+  else if (!strcmp(u, "SELFTEST")) { selftest_src = src; reply(src, "OK self-test runs on the next camera frame\n"); }
   else if (!strcmp(u, "CANCEL")) { enrol_goal = 0; reply(src, "OK\n"); show("Ready", C_WHITE); }
   else if (!strncmp(u, "DELETE ", 7)) {
     if (!strcmp(u + 7, "ALL")) n_people = 0;

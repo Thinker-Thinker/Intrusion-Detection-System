@@ -1,6 +1,7 @@
 """PC tool for the door unit (STM32 USB virtual COM port).
 
     python tools/door.py info                      # model / flash / people / timings
+    python tools/door.py selftest                  # run the models on a built-in face; should say PASS
     python tools/door.py flash-model               # upload build/rec_weights.bin to the external flash (once)
     python tools/door.py enrol Thinker             # stand in front of the camera; 10 samples (~5 s)
     python tools/door.py list
@@ -118,7 +119,7 @@ def cmd_enrol(b, args):
     if r.startswith("ERR"):
         sys.exit(1)
     print("Look at the camera from about 50 cm; turn your head slightly left/right while it beeps.")
-    r = b.wait_for(("OK enrolled", "ERR"), 60)
+    r = b.wait_for(("OK enrolled", "ERR"), 90)
     print(r or "No answer (timeout)")
 
 
@@ -166,6 +167,7 @@ def main():
     ap.add_argument("--port")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("info")
+    sub.add_parser("selftest")
     p = sub.add_parser("flash-model"); p.add_argument("file", nargs="?", default=str(DEFAULT_WEIGHTS))
     p = sub.add_parser("enrol"); p.add_argument("name"); p.add_argument("--samples", type=int)
     sub.add_parser("list")
@@ -181,6 +183,9 @@ def main():
     if args.cmd == "info":
         print(b.command("INFO", ("INFO",)))
         print(b.wait_for(("CAM",), 1) or "")
+    elif args.cmd == "selftest":
+        print(b.command("SELFTEST", ("OK", "ERR")))
+        print(b.wait_for(("SELFTEST",), 10) or "no result (is the camera running?)")
     elif args.cmd == "flash-model":
         cmd_flash_model(b, args)
     elif args.cmd == "enrol":
