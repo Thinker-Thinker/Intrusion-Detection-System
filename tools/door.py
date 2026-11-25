@@ -11,6 +11,8 @@
     python tools/door.py open                      # open the door remotely
     python tools/door.py monitor [--debug]         # print events (GRANT/UNKNOWN/SPOOF...) and per-frame details
     python tools/door.py snap photo.png            # save what the camera sees
+    python tools/door.py collect dataset/door_live/Thinker --count 150   # frames for retraining
+    python tools/door.py send "SPOOF 1"            # liveness check off (SPOOF 0.5 = back on); resets at power-up
     python tools/door.py send "ANY COMMAND"        # raw command, prints the replies for 2 s
 
 Add --port COM7 if the board is not found automatically.
@@ -140,9 +142,9 @@ def cmd_monitor(b, args):
             b.send("DEBUG 0")
 
 
-def cmd_snap(b, args):
+def grab(b, timeout=5):
+    """One camera frame as a BGR image (same colour conversion as tools/capture.py), or None."""
     import numpy as np
-    import cv2
     b.send("SNAP")
     hdr = struct.Struct("<4sHHHHII")
     end, buf = time.time() + 5, bytearray()
@@ -154,13 +156,39 @@ def cmd_snap(b, args):
             if len(buf) >= i + hdr.size + length:
                 px = bytes(buf[i + hdr.size:i + hdr.size + length])
                 if zlib.crc32(px) & 0xFFFFFFFF != crc:
-                    sys.exit("frame damaged, try again")
+                    return None
                 v = np.frombuffer(px, ">u2").reshape(h, w).astype(np.uint32)
-                img = np.dstack([(v & 0x1F) * 255 // 31, ((v >> 5) & 0x3F) * 255 // 63, ((v >> 11) & 0x1F) * 255 // 31]).astype(np.uint8)
-                cv2.imwrite(args.out, img)
-                print("saved", args.out)
-                return
-    sys.exit("no frame received")
+                return np.dstack([(v & 0x1F) * 255 // 31, ((v >> 5) & 0x3F) * 255 // 63, ((v >> 11) & 0x1F) * 255 // 31]).astype(np.uint8)
+    return None
+
+
+def cmd_snap(b, args):
+    import cv2
+    img = grab(b)
+    if img is None:
+        sys.exit("no frame received, try again")
+    cv2.imwrite(args.out, img)
+    print("saved", args.out)
+
+
+def cmd_collect(b, args):
+    """Save frames for retraining, e.g. dataset/door_live/Thinker or dataset/door_spoof_print."""
+    import cv2
+    out = Path(args.folder); out.mkdir(parents=True, exist_ok=True)
+    print(f"Saving {args.count} frames to {out} (Ctrl+C to stop early)")
+    n = 0
+    try:
+        while n < args.count:
+            img = grab(b)
+            if img is None:
+                continue
+            cv2.imwrite(str(out / f"{time.strftime('%Y%m%d_%H%M%S')}_{n:04d}.png"), img)
+            n += 1
+            print(f"\r  {n}/{args.count}", end="", flush=True)
+            time.sleep(args.every)
+    except KeyboardInterrupt:
+        pass
+    print(f"\nsaved {n} frames")
 
 
 def main():
@@ -177,6 +205,8 @@ def main():
     sub.add_parser("open")
     p = sub.add_parser("monitor"); p.add_argument("--debug", action="store_true")
     p = sub.add_parser("snap"); p.add_argument("out", nargs="?", default="snap.png")
+    p = sub.add_parser("collect"); p.add_argument("folder"); p.add_argument("--count", type=int, default=150)
+    p.add_argument("--every", type=float, default=0.3)
     p = sub.add_parser("send"); p.add_argument("line")
     args = ap.parse_args()
 
@@ -204,6 +234,8 @@ def main():
         print(b.command("OPEN", ("OK", "ERR")))
     elif args.cmd == "monitor":
         cmd_monitor(b, args)
+    elif args.cmd == "collect":
+        cmd_collect(b, args)
     elif args.cmd == "snap":
         cmd_snap(b, args)
     elif args.cmd == "send":

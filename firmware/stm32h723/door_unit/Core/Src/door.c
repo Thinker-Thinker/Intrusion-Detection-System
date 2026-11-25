@@ -43,7 +43,7 @@ static float person_k[MAX_PEOPLE];   /* 1 / |q| */
 static int n_people;
 
 /* ---------------------------------------------------------------- state */
-static float thresh = DEFAULT_THRESH;
+static float thresh = DEFAULT_THRESH, spoof_p = SPOOF_P;   /* SPOOF <p> changes it; 1 = liveness off */
 static int debug_src, reed_alarm, snap_req, stream_on, selftest_src;
 
 static float emb[FM_EMB], emb_sum[FM_EMB];
@@ -217,7 +217,6 @@ static void enrol_step(const vis_face_t *f, float p_spoof)
     show("Enrol: come closer", C_CYAN);
     snprintf(why, sizeof why, "face %d px wide, need %d: come closer", (int)(f->box[2] - f->box[0]), ENROL_MIN_PX);
   }
-  else if (p_spoof >= SPOOF_P) { show("Enrol: not live?", C_YELLOW); snprintf(why, sizeof why, "liveness says photo/screen (%.2f)", p_spoof); }
   else if (now - enrol_last < ENROL_GAP_MS) return;
   else {
     fm_embed(FM_CROP112, emb);
@@ -331,7 +330,7 @@ void door_process(uint8_t *frame)
   if (!f) { show(n_people ? "Look at the camera" : "No one enrolled", C_WHITE); goto done; }
   if (!big) { show("Come closer", C_YELLOW); box_color = C_YELLOW; reset_track(); goto done; }
 
-  if (p_spoof >= SPOOF_P) {
+  if (p_spoof >= spoof_p) {
     box_color = C_RED; n_sum = 0; memset(emb_sum, 0, sizeof emb_sum);
     if (++spoof_run >= SPOOF_FRAMES) {
       show("SPOOF - photo/screen", C_RED);
@@ -460,7 +459,7 @@ void door_poll(void)
 /* ---------------------------------------------------------------- commands */
 static void help(int src)
 {
-  reply(src, "Commands: INFO SELFTEST TEST SERVO <deg> BEEP LIST ENROL <name> [n] CANCEL DELETE <name>|ALL THRESH <x> OPEN DEBUG 0|1 "
+  reply(src, "Commands: INFO SELFTEST TEST SERVO <deg> BEEP LIST ENROL <name> [n] CANCEL DELETE <name>|ALL THRESH <x> SPOOF <p> OPEN DEBUG 0|1 "
              "REED 0|1 SNAP STREAM 0|1 AE +|- AUTO 0|1 (and PING STATUS TEST SERVO BEEP LED on the ESP32 link)\n");
 }
 
@@ -528,6 +527,10 @@ void door_command(char *line, int src)
       n_people--;
     }
     reply(src, people_save() ? "ERR save failed\n" : "OK deleted\n");
+  }
+  else if (!strncmp(u, "SPOOF", 5)) {
+    if (*arg) { float t = strtof(arg, 0); if (t > 0) spoof_p = t; }
+    snprintf(s, sizeof s, spoof_p >= 1 ? "OK liveness check off\n" : "OK spoof threshold=%.2f\n", spoof_p); reply(src, s);
   }
   else if (!strncmp(u, "THRESH", 6)) {
     if (*arg) { float t = strtof(arg, 0); if (t > 0 && t < 1) thresh = t; }
