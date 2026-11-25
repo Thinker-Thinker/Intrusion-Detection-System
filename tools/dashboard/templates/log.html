@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Access log · Door Admin{% endblock %}
+{% block body %}
+<h1>Access log</h1>
+<p class="sub">Copied from the door's own log, which keeps working without the network. Latest 500 shown. <a href="{{ url_for('log_csv') }}">Download all as CSV</a></p>
+<form class="row" method="get" style="margin-bottom:14px">
+  <select name="type" id="type"><option value="">All events</option>{% for t in types %}<option value="{{ t }}" {{ 'selected' if args.get('type')==t }}>{{ EVENT_NAMES.get(t, t) }}</option>{% endfor %}</select>
+  <input type="text" name="name" id="fname" placeholder="Name" value="{{ args.get('name','') }}">
+  <input type="date" name="day" id="day" value="{{ args.get('day','') }}">
+  <button type="submit">Filter</button> <a class="btn" href="{{ url_for('log_page') }}">Clear</a>
+</form>
+<table>
+<tr><th>#</th><th>Time</th><th>Event</th><th>Who</th><th>Match</th></tr>
+{% for r in rows %}
+<tr><td class="num muted">{{ r.seq }}</td><td class="num">{{ fmt_time(r.time) }}</td><td><span class="tag {{ r.type }}">{{ EVENT_NAMES.get(r.type, r.type) }}</span></td>
+<td>{{ r.name or '' }}</td><td class="num">{{ '%.2f'|format(r.score) if r.score else '' }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">No records match.</td></tr>{% endfor %}
+</table>
+{% endblock %}

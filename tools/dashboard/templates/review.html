@@ -1,0 +1,47 @@
+{% extends "base.html" %}{% block title %}Review · Door Admin{% endblock %}
+{% block body %}
+<h1>Unknown faces</h1>
+<p class="sub">The door refused these people because it did not recognise them. Let them in once, add them permanently, or reject.</p>
+{% if not faces %}<div class="card muted">Nobody is waiting. New unknown faces appear here within a few seconds.</div>{% endif %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px">
+{% for f in faces %}
+  {% set fresh = now - f.received <= once_s %}
+  <div class="card" style="display:grid;grid-template-columns:112px 1fr;gap:14px">
+    <img src="{{ url_for('face_png', fid=f.id) }}" width="112" height="112" alt="Unknown face {{ f.id }}" style="border-radius:8px;image-rendering:auto;width:112px;height:112px">
+    <div>
+      <div style="font-weight:600">{{ fmt_time(f.time) }}</div>
+      <div class="muted" style="font-size:13px">Closest: {{ f.closest or '—' }} ({{ '%.2f'|format(f.score) }})</div>
+      <form method="post" action="{{ url_for('face_admit', fid=f.id) }}" style="margin-top:8px">
+        <button class="good" type="submit" {{ '' if fresh else 'disabled title="More than 2 minutes ago"' }}>Let in once</button>
+        {% if not fresh %}<span class="muted" style="font-size:12px">expired</span>{% endif %}
+      </form>
+    </div>
+    <form method="post" action="{{ url_for('face_enrol', fid=f.id) }}" style="grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:8px">
+      <div class="row"><input type="text" name="name" id="name{{ f.id }}" placeholder="Name to add permanently" style="flex:1;min-width:150px">
+        <input type="time" name="start" id="start{{ f.id }}" value="00:00"> to <input type="time" name="end" id="end{{ f.id }}" value="23:59"></div>
+      <div class="days">{% for d in DAYS %}<label><input type="checkbox" name="day_{{ d }}" id="day_{{ d }}{{ f.id }}" checked> {{ d }}</label>{% endfor %}</div>
+      <div class="row"><button class="primary" type="submit">Add permanently</button>
+        <button class="danger" type="submit" formaction="{{ url_for('face_reject', fid=f.id) }}">Reject</button></div>
+    </form>
+  </div>
+{% endfor %}
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px">
+<div>
+<h2>Latest events</h2>
+<table><tr><th>Time</th><th>Event</th><th>Who</th></tr>
+{% for r in recent %}<tr><td class="num">{{ fmt_time(r.time) }}</td><td><span class="tag {{ r.type }}">{{ EVENT_NAMES.get(r.type, r.type) }}</span></td><td>{{ r.name or '' }}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">No events yet.</td></tr>{% endfor %}
+</table>
+</div>
+<div>
+<h2>Recent decisions</h2>
+<table><tr><th>Face</th><th>Decision</th><th>When</th></tr>
+{% for d in decided %}<tr><td><img src="{{ url_for('face_png', fid=d.id) }}" width="36" height="36" alt="" style="border-radius:4px;vertical-align:middle"></td>
+<td><span class="tag {{ d.status }}">{{ d.status }}</span> {{ d.decided_name or '' }}</td><td class="num muted">{{ fmt_time(d.decided_at) }}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">None yet.</td></tr>{% endfor %}
+</table>
+</div>
+</div>
+{% endblock %}

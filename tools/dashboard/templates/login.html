@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block title %}Log in · Door Admin{% endblock %}
+{% block body %}
+<div class="card" style="max-width:360px;margin:10vh auto 0">
+  <h1>Door Admin</h1>
+  <p class="sub">Face-recognition door, University of Ibadan</p>
+  <form method="post" style="display:grid;gap:10px">
+    <label>Username<br><input type="text" name="username" id="username" value="admin" style="width:100%" autofocus></label>
+    <label>Password<br><input type="password" name="password" id="password" style="width:100%"></label>
+    <button class="primary" type="submit">Log in</button>
+  </form>
+</div>
+{% endblock %}

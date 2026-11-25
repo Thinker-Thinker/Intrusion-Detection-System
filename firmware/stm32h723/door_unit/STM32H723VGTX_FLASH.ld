@@ -24,8 +24,8 @@ MEMORY
   RAM_D1  (xrw) : ORIGIN = 0x24000000, LENGTH = 320K
   RAM_D2  (xrw) : ORIGIN = 0x30000000, LENGTH = 32K
   RAM_D3  (xrw) : ORIGIN = 0x38000000, LENGTH = 16K
-  /* external W25Q64 (memory-mapped OCTOSPI1). The last 256 KB hold people + header (extflash.h). */
-  EXTFLASH (r)  : ORIGIN = 0x90000000, LENGTH = 0x7C0000
+  /* external W25Q64 (memory-mapped OCTOSPI1). Above 6 MB: unknown-face queue, log, people, header (extflash.h). */
+  EXTFLASH (r)  : ORIGIN = 0x90000000, LENGTH = 0x600000
 }
 
 SECTIONS

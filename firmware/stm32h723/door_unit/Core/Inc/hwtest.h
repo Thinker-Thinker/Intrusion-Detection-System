@@ -8,6 +8,7 @@ void hwtest_poll(void);        /* call often from the main loop */
 const char *hwtest_lcd_line(void);  /* short status line for the LCD */
 
 void hw_uart_puts(const char *s);   /* line to the ESP32 */
+void hw_uart_write(const uint8_t *p, uint32_t n);
 void hw_servo_deg(int deg);
 void hw_led(int green, int red);
 void hw_beep(uint32_t ms);

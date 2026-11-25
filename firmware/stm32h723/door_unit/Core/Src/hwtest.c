@@ -1,7 +1,7 @@
 /* Hardware test for the door unit (Rev B wiring). Register-level for USART1, TIM3 and ADC1
  * (their HAL drivers are not in this project); HAL only for GPIO and clocks.
  *
- *  PA9  USART1_TX -> ESP32 GPIO16      PA10 USART1_RX <- ESP32 GPIO17   (115200 8N1)
+ *  PA9  USART1_TX -> ESP32 GPIO16      PA10 USART1_RX <- ESP32 GPIO17   (LINK_BAUD 8N1)
  *  PD8  ESP32 EN (open-drain, released)
  *  PB0  TIM3_CH3 servo PWM, 50 Hz      PD14 buzzer (high = on)
  *  PA0  LED strip MOSFET (high = on)   PD0 green LED, PD1 red LED (high = on)
@@ -25,7 +25,9 @@
 #define VREF 3.3f
 
 /* ------------------------------------------------------------------ UART1 */
-static volatile uint8_t rxbuf[256];
+#define LINK_BAUD 921600u          /* fast enough for a 38 KB unknown-face record in about 0.4 s */
+#define RXN 4096                   /* holds an admin command (up to ~760 bytes) while a frame is processed */
+static volatile uint8_t rxbuf[RXN];
 static volatile uint16_t rx_head, rx_tail;
 
 void USART1_IRQHandler(void)
@@ -36,7 +38,7 @@ void USART1_IRQHandler(void)
   while (USART1->ISR & USART_ISR_RXNE_RXFNE)
   {
     uint8_t c = (uint8_t)USART1->RDR;
-    uint16_t n = (rx_head + 1) & 255;
+    uint16_t n = (rx_head + 1) & (RXN - 1);
     if (n != rx_tail) { rxbuf[rx_head] = c; rx_head = n; }
   }
 }
@@ -50,10 +52,20 @@ static void uart_init(void)
   g.Speed = GPIO_SPEED_FREQ_LOW; g.Alternate = GPIO_AF7_USART1;
   HAL_GPIO_Init(GPIOA, &g);
   USART1->CR1 = 0;
-  USART1->BRR = (HAL_RCC_GetPCLK2Freq() + 57600) / 115200;   /* kernel clock = PCLK2 (reset default) */
+  USART1->BRR = (HAL_RCC_GetPCLK2Freq() + LINK_BAUD / 2) / LINK_BAUD;   /* kernel clock = PCLK2 (reset default) */
   USART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE_RXFNEIE | USART_CR1_UE;
   HAL_NVIC_SetPriority(USART1_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
+}
+
+void hw_uart_write(const uint8_t *p, uint32_t n)
+{
+  while (n--)
+  {
+    uint32_t t0 = HAL_GetTick();
+    while (!(USART1->ISR & USART_ISR_TXE_TXFNF)) if (HAL_GetTick() - t0 > 5) return;
+    USART1->TDR = *p++;
+  }
 }
 
 void hw_uart_puts(const char *s)
@@ -291,11 +303,11 @@ void hwtest_init(void)
 
 void hwtest_poll(void)
 {
-  static char line[64];
+  static char line[1024];
   static int n;
   while (rx_tail != rx_head)
   {
-    char c = (char)rxbuf[rx_tail]; rx_tail = (rx_tail + 1) & 255;
+    char c = (char)rxbuf[rx_tail]; rx_tail = (rx_tail + 1) & (RXN - 1);
     if (c == '\r') continue;
     if (c == '\n') { line[n] = 0; handle(line); n = 0; }
     else if (n < (int)sizeof line - 1) line[n++] = c;

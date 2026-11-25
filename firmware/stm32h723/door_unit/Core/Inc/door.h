@@ -23,6 +23,7 @@ void door_init(void);                       /* after xf_init(): loads the enroll
 void door_process(uint8_t *frame);          /* one camera frame (destroys it: the models reuse its RAM) */
 void door_poll(void);                       /* often: USB commands, door timer, exit button, PIR */
 void door_command(char *line, int src);
+void door_reply(int src, const char *s);   /* to USB or the ESP32 link */
 int  door_busy(void);                       /* 1 while a model upload is running (skip the camera) */
 int  door_want_frame(void);                 /* 1 when the PC asked for this frame (SNAP / STREAM) */
 

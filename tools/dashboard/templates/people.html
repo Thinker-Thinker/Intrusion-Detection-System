@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% block title %}People · Door Admin{% endblock %}
+{% block body %}
+<h1>People</h1>
+<p class="sub">Everyone the door lets in, and when. Changes are sent to the door straight away (or as soon as it is back online).</p>
+<table>
+<tr><th>Name</th><th>Access hours</th><th>Change hours</th><th></th></tr>
+{% for p in people %}
+<tr>
+  <td style="font-weight:600">{{ p.name }}</td>
+  <td>{{ days_text(p.days) }}, {{ fmt_hm(p.start) }}–{{ fmt_hm(p.end) }}</td>
+  <td><form method="post" action="{{ url_for('people_window', name=p.name) }}" class="row">
+    <input type="time" name="start" id="s_{{ p.name }}" value="{{ fmt_hm(p.start) }}"> to
+    <input type="time" name="end" id="e_{{ p.name }}" value="{{ fmt_hm(p.end if p.end < 1440 else 1439) }}">
+    <span class="days">{% for d in DAYS %}<label><input type="checkbox" name="day_{{ d }}" id="d_{{ d }}_{{ p.name }}" {{ 'checked' if p.days|bit(loop.index0) }}>{{ d[:2] }}</label>{% endfor %}</span>
+    <button type="submit">Save</button></form></td>
+  <td><form method="post" action="{{ url_for('people_delete', name=p.name) }}"><button class="danger" type="submit">Remove</button></form></td>
+</tr>
+{% else %}
+<tr><td colspan="4" class="muted">Nobody yet. Enrol people at the door (tools/door.py enrol) or add an unknown face from the Review page.</td></tr>
+{% endfor %}
+</table>
+{% endblock %}

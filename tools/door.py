@@ -9,6 +9,10 @@
     python tools/door.py delete Thinker            # or: delete ALL
     python tools/door.py thresh 0.42               # recognition threshold (cosine); no value = show it
     python tools/door.py open                      # open the door remotely
+    python tools/door.py time                      # set the door's clock from this PC (the ESP32 also does it)
+    python tools/door.py window Thinker 08:00 18:00 Mon-Fri    # access hours for one person
+    python tools/door.py schedule on 07:00 19:00 Mon-Fri       # door-wide opening hours ("schedule off")
+    python tools/door.py log                       # the door's own access log
     python tools/door.py monitor [--debug]         # print events (GRANT/UNKNOWN/SPOOF...) and per-frame details
     python tools/door.py snap photo.png            # save what the camera sees
     python tools/door.py collect dataset/door_live/Thinker --count 150   # frames for retraining
@@ -126,6 +130,53 @@ def cmd_enrol(b, args):
     print(r or "No answer (timeout)")
 
 
+DAY_NAMES = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+
+
+def parse_days(text):
+    """'Mon-Fri', 'all', 'Mon,Wed,Fri' -> bit mask (bit 0 = Monday)."""
+    t = (text or "all").lower()
+    if t in ("all", "every", "daily"):
+        return 0x7F
+    mask = 0
+    for part in t.split(","):
+        if "-" in part:
+            a, b = (DAY_NAMES.index(x[:3]) for x in part.split("-"))
+            for d in range(a, b + 1):
+                mask |= 1 << d
+        else:
+            mask |= 1 << DAY_NAMES.index(part[:3])
+    return mask
+
+
+def hm(text):
+    h, m = text.split(":")
+    return min(1439, int(h) * 60 + int(m))
+
+
+def local_unix():
+    t = time.time()
+    return int(t - time.timezone + (3600 if time.localtime(t).tm_isdst > 0 else 0))
+
+
+def cmd_log(b, args):
+    after, total = 0, 0
+    while True:
+        b.send(f"LOGSINCE {after} 40")
+        n = None
+        for ln in b.lines(5):
+            if ln.startswith("LOG "):
+                p = ln.split()
+                after = int(p[1]); total += 1
+                t = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(int(p[2]))) if int(p[2]) else "time not set      "
+                print(f"{p[1]:>6}  {t}  {p[3]:<8} {p[4] if p[4] != '-' else '':<20} {p[5]}")
+            elif ln.startswith("LOGEND"):
+                n = int(ln.split()[1]); break
+        if not n:
+            break
+    print(f"{total} records")
+
+
 def cmd_monitor(b, args):
     if args.debug:
         b.send("DEBUG 1")
@@ -203,6 +254,11 @@ def main():
     p = sub.add_parser("delete"); p.add_argument("name")
     p = sub.add_parser("thresh"); p.add_argument("value", nargs="?")
     sub.add_parser("open")
+    sub.add_parser("time")
+    p = sub.add_parser("window"); p.add_argument("name"); p.add_argument("start"); p.add_argument("end"); p.add_argument("days", nargs="?", default="all")
+    p = sub.add_parser("schedule"); p.add_argument("state", choices=["on", "off"]); p.add_argument("start", nargs="?", default="07:00")
+    p.add_argument("end", nargs="?", default="19:00"); p.add_argument("days", nargs="?", default="Mon-Fri")
+    sub.add_parser("log")
     p = sub.add_parser("monitor"); p.add_argument("--debug", action="store_true")
     p = sub.add_parser("snap"); p.add_argument("out", nargs="?", default="snap.png")
     p = sub.add_parser("collect"); p.add_argument("folder"); p.add_argument("--count", type=int, default=150)
@@ -230,6 +286,14 @@ def main():
         print(b.command(f"DELETE {args.name}", ("OK", "ERR")))
     elif args.cmd == "thresh":
         print(b.command("THRESH" + (f" {args.value}" if args.value else ""), ("OK", "ERR")))
+    elif args.cmd == "time":
+        print(b.command(f"TIME {local_unix()}", ("OK", "ERR")))
+    elif args.cmd == "window":
+        print(b.command(f"WIN {args.name} {hm(args.start)} {hm(args.end)} {parse_days(args.days)}", ("OK", "ERR")))
+    elif args.cmd == "schedule":
+        print(b.command(f"SCHED {1 if args.state == 'on' else 0} {hm(args.start)} {hm(args.end)} {parse_days(args.days)}", ("SCHED", "ERR")))
+    elif args.cmd == "log":
+        cmd_log(b, args)
     elif args.cmd == "open":
         print(b.command("OPEN", ("OK", "ERR")))
     elif args.cmd == "monitor":

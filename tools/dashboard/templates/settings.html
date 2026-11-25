@@ -1,0 +1,27 @@
+{% extends "base.html" %}{% block title %}Settings · Door Admin{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+<p class="sub">Door last seen: {{ fmt_time(door_last_seen_local) if door_last_seen else 'never' }} (this laptop's time).</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+<form method="post" class="card" style="display:grid;gap:10px">
+  <input type="hidden" name="form" value="sched">
+  <h2 style="margin:0">Door opening hours</h2>
+  <p class="muted" style="margin:0;font-size:13px">Outside these hours the door lets nobody in by face (the exit button still works).</p>
+  <label><input type="checkbox" name="on" id="sched_on" {{ 'checked' if sched_on }}> Use opening hours</label>
+  <div class="row"><input type="time" name="start" id="sched_start" value="{{ fmt_hm(sched_start) }}"> to <input type="time" name="end" id="sched_end" value="{{ fmt_hm(sched_end if sched_end < 1440 else 1439) }}"></div>
+  <div class="days">{% for d in DAYS %}<label><input type="checkbox" name="day_{{ d }}" id="sd_{{ d }}" {{ 'checked' if sched_days|bit(loop.index0) }}> {{ d }}</label>{% endfor %}</div>
+  <div><button class="primary" type="submit">Send to door</button></div>
+</form>
+<form method="post" class="card" style="display:grid;gap:10px">
+  <input type="hidden" name="form" value="password">
+  <h2 style="margin:0">Change password</h2>
+  <input type="password" name="new" id="newpw" placeholder="New password (6+ characters)">
+  <div><button type="submit">Change</button></div>
+</form>
+<div class="card" style="display:grid;gap:10px">
+  <h2 style="margin:0">Door link</h2>
+  <p style="margin:0">Door key for the ESP32 sketch: <code>{{ door_key }}</code></p>
+  <form method="post"><input type="hidden" name="form" value="open"><button type="submit">Open the door now</button></form>
+</div>
+</div>
+{% endblock %}

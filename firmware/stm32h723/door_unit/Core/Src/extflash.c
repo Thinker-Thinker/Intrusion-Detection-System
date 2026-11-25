@@ -7,7 +7,7 @@
 
 extern const uint8_t __extflash_start[], __extflash_end[];   /* from the linker script */
 
-static int ok, mapped, writing, rec_valid;
+static int ok, mapped, writing, rec_valid, rec_valid_before;
 static uint32_t jedec;
 
 static uint32_t crc_table[256];
@@ -77,6 +77,7 @@ int xf_init(void)
 int xf_write_begin(void)
 {
   if (!ok) return -1;
+  rec_valid_before = rec_valid;
   rec_valid = 0;                         /* recognition must not read the flash while it is written */
   if (map_off() != 0) return -1;
   writing = 1;
@@ -108,5 +109,13 @@ int xf_write_end(void)
   writing = 0;
   if (map_on() != 0) return -1;
   xf_rec_check();
+  return 0;
+}
+
+int xf_write_end_data(void)
+{
+  writing = 0;
+  if (map_on() != 0) return -1;
+  rec_valid = rec_valid_before;
   return 0;
 }
